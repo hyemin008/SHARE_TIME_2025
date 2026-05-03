@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쉐어타임 (ShareTime) - 통합본</title>
+    <style>
+        /* --- [1] 기본 스타일 변수 --- */
+        :root {
+            --primary: #2ECC71;
+            --primary-dark: #27ae60;
+            --bg-gray: #F5F7FA;
+            --text-main: #333;
+            --text-sub: #888;
+            --border: #E0E0E0;
+            --red-heart: #e74c3c;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            margin: 0; padding: 0;
+            background-color: #2c3e50;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Malgun Gothic", sans-serif;
+        }
+
+        /* --- [2] 프레임 레이아웃 --- */
+        .phone-frame {
+            width: 375px; height: 812px;
+            background-color: white;
+            border-radius: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        .status-bar {
+            height: 44px; flex-shrink: 0;
+            background: white;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; font-size: 14px; font-weight: 600; color: #333; z-index: 100;
+        }
+
+        /* 헤더: 페이지마다 다르게 보임 */
+        .app-header {
+            height: 50px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; background: white; border-bottom: 1px solid var(--border); z-index: 90;
+        }
+        .header-title { font-size: 18px; font-weight: 800; color: var(--text-main); }
+        .header-title span { color: var(--primary); }
+        .back-btn { font-size: 24px; cursor: pointer; border: none; background: none; padding: 0; color: #333; }
+        .header-right { font-size: 20px; }
+
+        .app-content {
+            flex: 1;
+            background-color: var(--bg-gray);
+            overflow-y: auto;
+            position: relative;
+            scrollbar-width: none; 
+        }
+        .app-content::-webkit-scrollbar { display: none; }
+
+        /* 하단 탭바 */
+        .bottom-nav {
+            height: 80px;
+            background: white; border-top: 1px solid var(--border);
+            display: flex; justify-content: space-around; align-items: flex-start;
+            padding-top: 10px; flex-shrink: 0; z-index: 100;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: #999; cursor: pointer; width: 25%; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+        .nav-icon { font-size: 24px; margin-bottom: 4px; }
+
+        /* --- [3] 컴포넌트 스타일 --- */
+        .section { display: none; padding: 20px; animation: fadeIn 0.3s; padding-bottom: 80px; }
+        .section.active { display: block; }
+        
+        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; margin-bottom: 10px; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: white; border: 1px solid var(--border); color: #333; }
+        .btn-small { padding: 8px 15px; font-size: 13px; width: auto; }
+
+        /* 입력 폼 */
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 8px; color: #555; }
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; background: white;
+        }
+
+        /* 카드 스타일 */
+        .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); position: relative; }
+        
+        /* 매칭 리스트 아이템 */
+        .user-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .user-profile { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 42px; height: 42px; background: #eee; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 20px; }
+        .user-info .name { font-weight: bold; font-size: 15px; }
+        .user-info .region { font-size: 12px; color: #888; }
+        
+        /* [3. 매너온도] */
+        .manner-temp { font-size: 12px; color: #ff6b6b; font-weight: bold; background: #fff0f0; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+
+        /* [2. 찜하기 하트] */
+        .heart-btn { font-size: 22px; cursor: pointer; color: #ddd; transition: 0.2s; border: none; background: none; }
+        .heart-btn.active { color: var(--red-heart); transform: scale(1.1); }
+
+        .tag-box { background: #f9f9f9; padding: 12px; border-radius: 8px; font-size: 13px; color: #555; margin-bottom: 12px; line-height: 1.6; }
+        .tag-row { display: flex; gap: 5px; margin-bottom: 4px; }
+        .tag-label { font-weight: bold; width: 40px; }
+
+        /* [4. 필터 바] */
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+        .filter-chip { padding: 6px 14px; background: white; border: 1px solid #ddd; border-radius: 20px; font-size: 13px; color: #666; white-space: nowrap; cursor: pointer; }
+        .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* 홈 화면 배너 및 그리드 */
+        .banner { background: linear-gradient(135deg, #a8e063 0%, #56ab2f 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; color: white; }
+        .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .cat-item { text-align: center; font-size: 12px; cursor: pointer; }
+        .cat-circle { width: 50px; height: 50px; background: white; border-radius: 20px; margin: 0 auto 6px; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        /* 마이페이지 */
+        .mypage-header { background: white; padding: 30px 20px; text-align: center; margin: -20px -20px 20px -20px; }
+        .menu-list { background: white; border-radius: 12px; overflow: hidden; }
+        .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .menu-item:last-child { border-bottom: none; }
+
+        /* 채팅 */
+        .chat-list-item { display: flex; align-items: center; padding: 15px; background: white; border-bottom: 1px solid #eee; }
+        .chat-lock-cover { text-align: center; padding: 50px 20px; color: #666; }
+
+        /* 공지사항 */
+        .notice-item { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; }
+        .notice-tag { color: var(--primary); font-weight: bold; margin-right: 5px; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="phone-frame">
+        <div class="status-bar">
+            <span id="clock">12:30</span>
+            <span>🔋 100%</span>
+        </div>
+
+        <div class="app-header" id="main-header">
+            <div id="header-logo" class="header-title">Share<span>Time</span></div>
+            <button id="header-back" class="back-btn hidden" onclick="goBack()">←</button>
+            <div id="header-title-text" class="header-title hidden" style="font-size:16px;">제목</div>
+            
+            <div class="header-right">🔔</div>
+        </div>
+
+        <div class="app-content">
+
+            <div id="page-home" class="section active">
+                <div class="banner">
+                    <h3 style="margin:0 0 5px 0;">시간으로 나누는 가치 ⏳</h3>
+                    <p style="font-size:13px; opacity:0.9; margin:0;">지금 회원가입하고 3시간을 받아보세요!</p>
+                </div>
+
+                <h3 style="font-size: 16px; margin-bottom: 15px;">어떤 재능을 찾으세요?</h3>
+                <div class="category-grid">
+                    <div class="cat-item" onclick="navTo('matching', 'all')"><div class="cat-circle">🌏</div>전체</div>
+                    <div class="cat-item" onclick="navTo('matching', 'music')"><div class="cat-circle">🎹</div>음악</div>
+                    <div class="cat-item" onclick="navTo('matching', 'lang')"><div class="cat-circle">🗣️</div>어학</div>
+                    <div class="cat-item" onclick="navTo('matching', 'it')"><div class="cat-circle">💻</div>IT</div>
+                    <div class="cat-item" onclick="navTo('matching', 'design')"><div class="cat-circle">📸</div>디자인</div>
+                    <div class="cat-item" onclick="navTo('matching', 'sport')"><div class="cat-circle">💪</div>운동</div>
+                    <div class="cat-item" onclick="navTo('matching', 'cook')"><div class="cat-circle">🍳</div>요리</div>
+                    <div class="cat-item" onclick="navTo('matching', 'etc')"><div class="cat-circle">➕</div>기타</div>
+                </div>
+
+                <h3 style="font-size: 16px; margin-bottom: 15px;">이달의 인기 교환 🔥</h3>
+                <div class="card" onclick="navTo('matching')">
+                    <div class="user-header">
+                        <div class="user-profile">
+                            <div class="avatar">김</div>
+                            <div class="user-info">
+                                <div class="name">김철수 <span class="manner-temp">37.5℃</span></div>
+                                <div class="region">서울 마포구</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tag-box">
+                        <div>📤 <b>기타 레슨</b> (초급 환영)</div>
+                        <div>📥 <b>영어 회화</b> (프리토킹)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-matching" class="section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2 style="font-size: 20px; margin:0;">재능 찾기</h2>
+                    <button onclick="loadData()" class="btn-small btn-secondary">🔄 새로고침</button>
+                </div>
+
+                <div class="filter-bar">
+                    <div class="filter-chip active" onclick="applyFilter('all', this)">전체</div>
+                    <div class="filter-chip" onclick="applyFilter('서울', this)">서울</div>
+                    <div class="filter-chip" onclick="applyFilter('경기', this)">경기</div>
+                    <div class="filter-chip" onclick="applyFilter('부산', this)">부산</div>
+                </div>
+
+                <div id="data-list-container">
+                    <div style="text-align:center; padding:20px; color:#888;">데이터를 불러오는 중...</div>
+                </div>
+            </div>
+
+            <div id="page-chat-list" class="section">
+                <h2 style="font-size: 20px; margin-bottom: 15px;">채팅 목록</h2>
+                
+                <div id="chat-guest-view" class="chat-lock-cover hidden">
+                    <div style="font-size:40px; margin-bottom:10px;">🔒</div>
+                    <h3>로그인이 필요해요</h3>
+                    <p>회원이 되어 재능 교환을 시작해보세요.</p>
+                    <button class="btn btn-primary" onclick="navTo('login')">로그인 하기</button>
+                    <button class="btn btn-secondary" onclick="navTo('register')">회원가입 하기</button>
+                </div>
+
+                <div id="chat-member-view" class="hidden">
+                    <div class="chat-list-item" onclick="navTo('chat-room')">
+                        <div class="avatar" style="margin-right:15px;">코</div>
+                        <div>
+                            <div style="font-weight:bold;">코딩고수</div>
+                            <div style="font-size:13px; color:#888;">안녕하세요! 시간 괜찮으세요?</div>
+                        </div>
+                    </div>
+                    </div>
+            </div>
+
+            <div id="page-mypage" class="section">
+                
+                <div id="mypage-guest" class="hidden">
+                    <div class="mypage-header">
+                        <h2>환영합니다! 👋</h2>
+                        <p style="color:#666; margin-bottom:20px;">쉐어타임의 모든 기능을 이용해보세요.</p>
+                        <button class="btn btn-primary" onclick="navTo('login')">로그인 / 회원가입</button>
+                    </div>
+                    <div style="padding:0 10px;">
+                        <h3 style="font-size:16px;">공지사항</h3>
+                        <div class="notice-item"><span class="notice-tag">[필독]</span> 쉐어타임 이용 가이드</div>
+                        <div class="notice-item"><span class="notice-tag">[이벤트]</span> 신규가입 3시간 증정</div>
+                    </div>
+                </div>
+
+                <div id="mypage-member" class="hidden">
+                    <div class="mypage-header">
+                        <div class="avatar" style="width:60px; height:60px; margin:0 auto 10px; font-size:30px;">😊</div>
+                        <h2 id="my-nickname">홍길동님</h2>
+                        <div style="margin-top:5px;">
+                            <span class="manner-temp">36.5℃</span>
+                            <span style="font-size:13px; color:#666; margin-left:10px;">보유 시간: <b>3H</b></span>
+                        </div>
+                    </div>
+
+                    <div class="menu-list">
+                        <div class="menu-item" onclick="alert('준비 중인 기능입니다.')">📋 내 정보 수정 <span>></span></div>
+                        <div class="menu-item" onclick="alert('찜한 목록 기능 구현 중')">❤️ 찜한 재능 <span>></span></div>
+                        <div class="menu-item" onclick="alert('준비 중인 기능입니다.')">📝 내가 쓴 후기 <span>></span></div>
+                        <div class="menu-item" onclick="navTo('community')">📢 공지사항 <span>></span></div>
+                    </div>
+                    
+                    <button class="btn btn-secondary" style="margin-top:20px; border:none; color:#e74c3c;" onclick="logout()">로그아웃</button>
+                </div>
+            </div>
+
+            <div id="page-login" class="section">
+                <h2 style="margin-bottom: 30px;">로그인</h2>
+                <div class="input-group">
+                    <label>아이디</label>
+                    <input type="text" id="login-id" placeholder="아이디 입력">
+                </div>
+                <div class="input-group">
+                    <label>비밀번호</label>
+                    <input type="password" id="login-pw" placeholder="비밀번호 입력">
+                </div>
+                <button class="btn btn-primary" onclick="handleLogin()">로그인</button>
+                <div style="text-align:center; margin-top:15px; font-size:13px; color:#888;">
+                    계정이 없으신가요? <span onclick="navTo('register')" style="text-decoration:underline; cursor:pointer;">회원가입</span>
+                </div>
+            </div>
+
+            <div id="page-register" class="section">
+                <h2 style="margin-bottom: 20px;">회원가입</h2>
+                <form id="talent-form" onsubmit="event.preventDefault(); submitData();">
+                    <div class="input-group">
+                        <label>닉네임 (필수)</label>
+                        <input type="text" name="nickname" id="reg-nickname" required>
+                    </div>
+                    <div class="input-group">
+                        <label>지역</label>
+                        <select name="region" required>
+                            <option value="서울">서울</option>
+                            <option value="경기">경기</option>
+                            <option value="부산">부산</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>줄 수 있는 재능</label>
+                        <input type="text" name="give" placeholder="예: 포토샵 기초" required>
+                    </div>
+                    <div class="input-group">
+                        <label>받고 싶은 재능</label>
+                        <input type="text" name="take" placeholder="예: 영어 회화" required>
+                    </div>
+                    <div class="input-group">
+                        <label>가능 시간대</label>
+                        <input type="text" name="time" placeholder="예: 주말 오후" required>
+                    </div>
+                    <button type="submit" id="btn-submit" class="btn btn-primary">등록 완료</button>
+                </form>
+            </div>
+            
+            <div id="page-chat-room" class="section" style="background:#EBF7F0; height:100%;">
+                <div style="padding:20px; text-align:center; color:#888; margin-top:50px;">
+                    대화 내용이 여기에 표시됩니다.
+                </div>
+            </div>
+
+            <div id="page-community" class="section">
+                <h2>커뮤니티 & 공지</h2>
+                <div class="notice-item"><span class="notice-tag">[공지]</span> 서버 점검 안내</div>
+                <div class="notice-item"><span class="notice-tag">[후기]</span> 피아노 레슨 교환 후기입니다!</div>
+            </div>
+
+        </div>
+
+        <div class="bottom-nav" id="main-nav">
+            <div class="nav-item active" onclick="navTo('home')" id="nav-home">
+                <span class="nav-icon">🏠</span><span>홈</span>
+            </div>
+            <div class="nav-item" onclick="navTo('matching')" id="nav-matching">
+                <span class="nav-icon">🔍</span><span>매칭</span>
+            </div>
+            <div class="nav-item" onclick="navTo('chat-list')" id="nav-chat-list">
+                <span class="nav-icon">💬</span><span>채팅</span>
+            </div>
+            <div class="nav-item" onclick="navTo('mypage')" id="nav-mypage">
+                <span class="nav-icon">👤</span><span>마이</span>
+            </div>
+        </div>
+    </div>
+
+    
+    <script type="module">
+    // -----------------------------------------------------------
+    // 1. Firebase 설정 및 초기화
+    // -----------------------------------------------------------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } 
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // 🔴 중요: 콘솔에서 복사한 본인의 config로 바꿔주세요!
+    const firebaseConfig = {
+        apiKey: "AIzaSyCy943mhhwUIXqnNUNfacM3k_uaVRam2Mk",
+        authDomain: "sharetime-7973f.firebaseapp.com",
+        projectId: "sharetime-7973f",
+        storageBucket: "sharetime-7973f.firebasestorage.app",
+        messagingSenderId: "331562385460",
+        appId: "1:331562385460:web:92a90e7da4cbaff03aca61"
+    };
+
+    // Firebase 실행
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const talentsCollection = collection(db, "talents"); // 'talents'라는 이름의 저장소 사용
+
+    // -----------------------------------------------------------
+    // 2. 전역 변수 및 상태 관리
+    // -----------------------------------------------------------
+    let currentState = {
+        isLoggedIn: false,
+        nickname: '',
+        cachedData: [] 
+    };
+
+    // 윈도우 로드 시 실행 (type="module"이라 window 객체에 함수를 연결해줘야 함)
+    window.onload = function() {
+        updateClock();
+        checkLoginSession();
+        navTo('home');
+    };
+
+    // -----------------------------------------------------------
+    // 3. 기존 기능 함수들 (그대로 유지하되 window에 연결)
+    // -----------------------------------------------------------
+    
+    // 모듈 스크립트에서는 함수들이 지역 변수가 되므로, HTML 버튼에서 쓰려면 window에 붙여야 함
+    window.navTo = function(pageId, filterParam = null) {
+        // ... (기존 navTo 코드 내용 그대로 복사 or 아래처럼 작성) ...
+        document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+        const target = document.getElementById('page-' + pageId);
+        if(target) target.classList.add('active');
+
+        // 헤더 및 네비 제어 (기존 로직 동일)
+        const mainTabs = ['home', 'matching', 'chat-list', 'mypage'];
+        const headerLogo = document.getElementById('header-logo');
+        const headerBack = document.getElementById('header-back');
+        const headerTitle = document.getElementById('header-title-text');
+        const navBar = document.getElementById('main-nav');
+
+        if (mainTabs.includes(pageId)) {
+            navBar.style.display = 'flex';
+            headerBack.classList.add('hidden');
+            headerLogo.classList.remove('hidden');
+            headerTitle.classList.add('hidden');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            const navBtn = document.getElementById('nav-' + pageId);
+            if(navBtn) navBtn.classList.add('active');
+        } else {
+            navBar.style.display = 'none';
+            headerBack.classList.remove('hidden');
+            headerLogo.classList.add('hidden');
+            headerTitle.classList.remove('hidden');
+            if(pageId === 'login') headerTitle.innerText = "로그인";
+            if(pageId === 'register') headerTitle.innerText = "회원가입";
+            if(pageId === 'chat-room') headerTitle.innerText = "채팅방";
+        }
+
+        if (pageId === 'matching') {
+            if(filterParam) applyFilter(filterParam);
+            else loadData(); 
+        }
+        if (pageId === 'mypage') updateMyPageUI();
+        if (pageId === 'chat-list') updateChatUI();
+        
+        document.querySelector('.app-content').scrollTo(0,0);
+    };
+
+    window.goBack = function() { window.navTo('home'); };
+
+    // 시계
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').innerText = 
+            `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        setTimeout(updateClock, 1000);
+    }
+
+    // 로그인 관련 (기존과 동일)
+    window.handleLogin = function() {
+        const idInput = document.getElementById('login-id').value;
+        if (idInput.trim()) {
+            currentState.isLoggedIn = true;
+            currentState.nickname = idInput;
+            localStorage.setItem('shareTime_user', idInput);
+            alert(idInput + "님 환영합니다!");
+            window.navTo('home');
+        } else {
+            alert("아이디를 입력해주세요.");
+        }
+    };
+
+    window.logout = function() {
+        currentState.isLoggedIn = false;
+        currentState.nickname = '';
+        localStorage.removeItem('shareTime_user');
+        alert("로그아웃 되었습니다.");
+        window.navTo('home');
+    };
+
+    window.checkLoginSession = function() {
+        const savedName = localStorage.getItem('shareTime_user');
+        if (savedName) {
+            currentState.isLoggedIn = true;
+            currentState.nickname = savedName;
+        }
+    }
+
+    window.updateMyPageUI = function() {
+        const guestView = document.getElementById('mypage-guest');
+        const memberView = document.getElementById('mypage-member');
+        if (currentState.isLoggedIn) {
+            guestView.classList.add('hidden');
+            memberView.classList.remove('hidden');
+            document.getElementById('my-nickname').innerText = currentState.nickname + "님";
+        } else {
+            guestView.classList.remove('hidden');
+            memberView.classList.add('hidden');
+        }
+    }
+
+    window.updateChatUI = function() {
+        const guestView = document.getElementById('chat-guest-view');
+        const memberView = document.getElementById('chat-member-view');
+        if (currentState.isLoggedIn) {
+            guestView.classList.add('hidden');
+            memberView.classList.remove('hidden');
+        } else {
+            guestView.classList.remove('hidden');
+            memberView.classList.add('hidden');
+        }
+    }
+
+    window.tryChat = function(targetName) {
+        if (currentState.isLoggedIn) {
+            window.navTo('chat-room');
+        } else {
+            if(confirm("로그인이 필요합니다. 이동할까요?")) window.navTo('login');
+        }
+    }
+
+    // -----------------------------------------------------------
+    // 4. [핵심 변경] Firebase 데이터 읽기/쓰기 함수
+    // -----------------------------------------------------------
+
+    // [읽기] loadData: fetch 대신 getDocs 사용
+    window.loadData = async function() {
+        const container = document.getElementById('data-list-container');
+        container.innerHTML = '<div style="text-align:center; padding:20px;">로딩 중...</div>';
+
+        try {
+            // Firestore에서 데이터 가져오기 (날짜 내림차순 정렬)
+            const q = query(talentsCollection, orderBy("timestamp", "desc"));
+            const querySnapshot = await getDocs(q);
+            
+            const dataList = [];
+            querySnapshot.forEach((doc) => {
+                dataList.push(doc.data()); // 문서 데이터를 배열에 저장
+            });
+
+            currentState.cachedData = dataList;
+            renderList(dataList);
+
+        } catch (error) {
+            console.error("Error loading documents: ", error);
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:red;">데이터 로드 실패</div>';
+        }
+    };
+
+    // [쓰기] submitData: fetch 대신 addDoc 사용
+    window.submitData = async function() {
+        const btn = document.getElementById('btn-submit');
+        btn.innerText = "등록 중...";
+        btn.disabled = true;
+
+        // 폼 데이터 가져오기
+        const nickname = document.getElementById('reg-nickname').value;
+        const region = document.querySelector('select[name="region"]').value;
+        const give = document.querySelector('input[name="give"]').value;
+        const take = document.querySelector('input[name="take"]').value;
+        const time = document.querySelector('input[name="time"]').value;
+
+        try {
+            // Firestore에 문서 추가
+            await addDoc(talentsCollection, {
+                nickname: nickname,
+                region: region,
+                give: give,
+                take: take,
+                time: time,
+                timestamp: serverTimestamp() // 서버 기준 시간 저장
+            });
+
+            alert("성공적으로 등록되었습니다!");
+            document.getElementById('talent-form').reset();
+            
+            // 신규 가입 자동 로그인 처리 (데모용)
+            if(!currentState.isLoggedIn) {
+                localStorage.setItem('shareTime_user', nickname);
+                currentState.isLoggedIn = true;
+                currentState.nickname = nickname;
+            }
+            window.navTo('matching');
+
+        } catch (e) {
+            console.error("Error adding document: ", e);
+            alert("등록 중 오류가 발생했습니다.");
+        } finally {
+            btn.innerText = "등록 완료";
+            btn.disabled = false;
+        }
+    };
+
+    // [렌더링] 리스트 그리기 (기존과 동일)
+    window.renderList = function(data) {
+        const container = document.getElementById('data-list-container');
+        container.innerHTML = '';
+
+        if(data.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px;">등록된 재능이 없습니다.</div>';
+            return;
+        }
+
+        data.forEach((item) => {
+            const isLiked = localStorage.getItem('like_' + item.nickname) === 'true';
+            const temp = (36 + Math.random() * 4).toFixed(1);
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="user-header">
+                    <div class="user-profile">
+                        <div class="avatar">${item.nickname ? item.nickname[0] : '?'}</div>
+                        <div class="user-info">
+                            <div class="name">
+                                ${item.nickname} 
+                                <span class="manner-temp">${temp}℃</span>
+                            </div>
+                            <div class="region">${item.region}</div>
+                        </div>
+                    </div>
+                    <button class="heart-btn ${isLiked ? 'active' : ''}" onclick="toggleLike(this, '${item.nickname}')">❤</button>
+                </div>
+                <div class="tag-box">
+                    <div class="tag-row"><span class="tag-label">📤</span> ${item.give}</div>
+                    <div class="tag-row"><span class="tag-label">📥</span> ${item.take}</div>
+                    <div style="font-size:11px; color:#888; margin-top:5px;">🕒 ${item.time}</div>
+                </div>
+                <button class="btn btn-secondary btn-small" onclick="tryChat('${item.nickname}')">💬 채팅하기</button>
+            `;
+            container.appendChild(card);
+        });
+    };
+
+    window.toggleLike = function(btn, id) {
+        const key = 'like_' + id;
+        const current = localStorage.getItem(key) === 'true';
+        if(current) {
+            localStorage.removeItem(key);
+            btn.classList.remove('active');
+        } else {
+            localStorage.setItem(key, 'true');
+            btn.classList.add('active');
+        }
+    };
+
+    window.applyFilter = function(keyword, btnElement) {
+        if(btnElement) {
+            document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+        if(keyword === 'all') {
+            renderList(currentState.cachedData);
+        } else {
+            const filtered = currentState.cachedData.filter(item => {
+                const str = (item.region + item.give + item.take).toLowerCase();
+                return str.includes(keyword);
+            });
+            renderList(filtered);
+        }
+    };
+
+    </script>
+</body>
+</html>

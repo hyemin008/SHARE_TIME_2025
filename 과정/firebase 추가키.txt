@@ -1,0 +1,8 @@
+const firebaseConfig = {
+  apiKey: "AIzaSyCy943mhhwUIXqnNUNfacM3k_uaVRam2Mk",
+  authDomain: "sharetime-7973f.firebaseapp.com",
+  projectId: "sharetime-7973f",
+  storageBucket: "sharetime-7973f.firebasestorage.app",
+  messagingSenderId: "331562385460",
+  appId: "1:331562385460:web:92a90e7da4cbaff03aca61"
+};
