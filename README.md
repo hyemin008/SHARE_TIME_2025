@@ -1,6 +1,7 @@
 
 제작기간 制作期間 : 2025.11 ~ 2025.12
 名前 : シェアタイム SHARE TIME
+
 チーム : SHM(Leader / 本人), KHM, OYG, HJE
 사용 툴 ツール : HTML / CSS / JavaScript / Firebase / Firestore
 
